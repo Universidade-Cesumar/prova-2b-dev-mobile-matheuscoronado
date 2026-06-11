@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
@@ -48,6 +48,15 @@ export default function App() {
     setQuantidade('');
   };
 
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <Text style={styles.cardNome}>{item.nome}</Text>
+      <View style={styles.cardBadge}>
+        <Text style={styles.cardQuantidade}>{item.quantidade} un.</Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
@@ -86,6 +95,15 @@ export default function App() {
           <Text style={styles.botaoTexto}>+ Cadastrar Material</Text>
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.secaoTitulo}>Inventário Atual</Text>
+
+      <FlatList
+        testID="lista-materials"
+        data={materiais}
+        keyExtractor={item => String(item.id)}
+        renderItem={renderItem}
+      />
     </View>
   );
 }
@@ -146,5 +164,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  secaoTitulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a3a5c',
+    marginBottom: 10,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  cardNome: {
+    fontSize: 15,
+    color: '#222',
+    flex: 1,
+  },
+  cardBadge: {
+    backgroundColor: '#e8f0fe',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  cardQuantidade: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#2a7ae4',
   },
 });
