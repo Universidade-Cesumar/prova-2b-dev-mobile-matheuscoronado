@@ -28,6 +28,21 @@ export default function App() {
     }
   };
 
+  const cadastrarMaterial = async () => {
+    const resposta = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: nome.trim(),
+        quantidade: Number(quantidade),
+      }),
+    });
+    const novoMaterial = await resposta.json();
+    setMateriais(lista => [novoMaterial, ...lista]);
+    setNome('');
+    setQuantidade('');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
