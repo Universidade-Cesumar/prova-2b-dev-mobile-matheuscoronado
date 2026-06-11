@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
@@ -37,15 +37,20 @@ export default function App() {
       Alert.alert('Atenção', 'Informe uma quantidade válida.');
       return;
     }
-    const resposta = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
-    });
-    const novoMaterial = await resposta.json();
-    setMateriais(lista => [novoMaterial, ...lista]);
-    setNome('');
-    setQuantidade('');
+    setEnviando(true);
+    try {
+      const resposta = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
+      });
+      const novoMaterial = await resposta.json();
+      setMateriais(lista => [novoMaterial, ...lista]);
+      setNome('');
+      setQuantidade('');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   const renderItem = ({ item }) => (
@@ -89,21 +94,28 @@ export default function App() {
 
         <TouchableOpacity
           testID="btn-cadastrar"
-          style={styles.botao}
+          style={[styles.botao, enviando && styles.botaoDesabilitado]}
           onPress={cadastrarMaterial}
+          disabled={enviando}
         >
-          <Text style={styles.botaoTexto}>+ Cadastrar Material</Text>
+          {enviando
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.botaoTexto}>+ Cadastrar Material</Text>
+          }
         </TouchableOpacity>
       </View>
 
       <Text style={styles.secaoTitulo}>Inventário Atual</Text>
 
-      <FlatList
-        testID="lista-materials"
-        data={materiais}
-        keyExtractor={item => String(item.id)}
-        renderItem={renderItem}
-      />
+      {carregando
+        ? <ActivityIndicator size="large" color="#2a7ae4" style={{ marginTop: 30 }} />
+        : <FlatList
+            testID="lista-materials"
+            data={materiais}
+            keyExtractor={item => String(item.id)}
+            renderItem={renderItem}
+          />
+      }
     </View>
   );
 }
@@ -159,6 +171,9 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 14,
+  },
+  botaoDesabilitado: {
+    backgroundColor: '#9ab8e6',
   },
   botaoTexto: {
     color: '#fff',
