@@ -29,6 +29,15 @@ export default function App() {
   };
 
   const cadastrarMaterial = async () => {
+    if (!nome.trim()) {
+      Alert.alert('Atenção', 'Informe o nome do material.');
+      return;
+    }
+    if (!quantidade.trim() || isNaN(Number(quantidade))) {
+      Alert.alert('Atenção', 'Informe uma quantidade válida.');
+      return;
+    }
+
     const resposta = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
