@@ -109,7 +109,12 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.secaoTitulo}>Inventário Atual</Text>
+      <View style={styles.secaoHeader}>
+        <Text style={styles.secaoTitulo}>Inventário Atual</Text>
+        <TouchableOpacity onPress={buscarMateriais}>
+          <Text style={styles.atualizar}>↻ Atualizar</Text>
+        </TouchableOpacity>
+      </View>
 
       {carregando
         ? <ActivityIndicator size="large" color="#2a7ae4" style={{ marginTop: 30 }} />
@@ -184,11 +189,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
+  secaoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   secaoTitulo: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1a3a5c',
-    marginBottom: 10,
+  },
+  atualizar: {
+    fontSize: 13,
+    color: '#2a7ae4',
   },
   card: {
     backgroundColor: '#fff',
