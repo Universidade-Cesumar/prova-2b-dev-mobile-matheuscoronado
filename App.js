@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Alert } from 'react-native';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
@@ -9,6 +9,20 @@ export default function App() {
   const [quantidade, setQuantidade] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+
+  const buscarMateriais = async () => {
+    setCarregando(true);
+    try {
+      const resposta = await fetch(API_URL);
+      if (!resposta.ok) throw new Error('Erro ao buscar materiais');
+      const dados = await resposta.json();
+      setMateriais(dados);
+    } catch (erro) {
+      Alert.alert('Erro', 'Não foi possível carregar o inventário.');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
