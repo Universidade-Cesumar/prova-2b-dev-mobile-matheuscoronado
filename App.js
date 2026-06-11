@@ -22,7 +22,7 @@ export default function App() {
       const dados = await resposta.json();
       setMateriais(dados);
     } catch (erro) {
-      Alert.alert('Erro', 'Não foi possível carregar o inventário.');
+      Alert.alert('Erro', 'Não foi possível carregar o inventário. Verifique a URL da API.');
     } finally {
       setCarregando(false);
     }
@@ -44,10 +44,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
       });
+      if (!resposta.ok) throw new Error('Erro ao cadastrar');
       const novoMaterial = await resposta.json();
       setMateriais(lista => [novoMaterial, ...lista]);
       setNome('');
       setQuantidade('');
+      Alert.alert('Sucesso', `"${novoMaterial.nome}" cadastrado com sucesso!`);
+    } catch (erro) {
+      Alert.alert('Erro', 'Não foi possível cadastrar o material.');
     } finally {
       setEnviando(false);
     }
