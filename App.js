@@ -159,6 +159,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 3,
   },
   label: {
@@ -216,6 +220,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardNome: {
@@ -234,4 +242,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2a7ae4',
   },
+  listaVaziaContainer: {
+  flexGrow: 1,
+  justifyContent: 'center',
+  },
+  listaVazia: {
+    textAlign: 'center',
+    color: '#aaa',
+    fontSize: 14,
+    marginTop: 40,
+  }
 });
