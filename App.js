@@ -1,7 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
+
 export default function App() {
+  const [materiais, setMateriais] = useState([]);
+  const [nome, setNome] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
