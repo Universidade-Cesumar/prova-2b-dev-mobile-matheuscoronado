@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
@@ -77,6 +77,14 @@ export default function App() {
           value={quantidade}
           onChangeText={setQuantidade}
         />
+
+        <TouchableOpacity
+          testID="btn-cadastrar"
+          style={styles.botao}
+          onPress={cadastrarMaterial}
+        >
+          <Text style={styles.botaoTexto}>+ Cadastrar Material</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -126,5 +134,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#222',
     backgroundColor: '#fafbfd',
+  },
+  botao: {
+    backgroundColor: '#2a7ae4',
+    borderRadius: 8,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  botaoTexto: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
