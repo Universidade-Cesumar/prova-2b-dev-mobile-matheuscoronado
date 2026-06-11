@@ -119,11 +119,15 @@ export default function App() {
       {carregando
         ? <ActivityIndicator size="large" color="#2a7ae4" style={{ marginTop: 30 }} />
         : <FlatList
-            testID="lista-materials"
-            data={materiais}
-            keyExtractor={item => String(item.id)}
-            renderItem={renderItem}
-          />
+          testID="lista-materials"
+          data={materiais}
+          keyExtractor={item => String(item.id)}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <Text style={styles.listaVazia}>Nenhum material cadastrado.</Text>
+          }
+          contentContainerStyle={materiais.length === 0 && styles.listaVaziaContainer}
+        />
       }
     </View>
   );
