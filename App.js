@@ -1,23 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
-  // --- Estados da Aplicação (Os alunos implementarão aqui) ---
-
-  // --- Funções de Requisição e Efeitos (Os alunos implementarão aqui) ---
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Almoxarifado - Enfermagem</Text>
-      
-      {/* Breve descrição do projeto inserida abaixo */}
+      <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
       <Text style={styles.description}>
-        Este template servirá para desenvolver o projeto responsável por modernizar o controle de insumos médicos do almoxarifado. 
-        Através desta interface conectada à API, é possível realizar o inventário em tempo real, cadastrar novos materiais e registrar baixas de estoque de forma ágil e segura.
+        Controle de insumos em tempo real. Cadastre novos materiais e
+        acompanhe o inventário conectado à API.
       </Text>
-
-      {/* Os alunos vão construir os componentes visuais das Sprints aqui dentro */}
-      
     </View>
   );
 }
@@ -25,22 +16,22 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 50,
+    backgroundColor: '#f4f6fb',
+    paddingTop: 55,
     paddingHorizontal: 20,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 10, // Reduzido ligeiramente para aproximar o texto explicativo
-    color: '#333',
+    color: '#1a3a5c',
+    marginBottom: 6,
   },
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 20, // Dá um espaçamento confortável entre as linhas do parágrafo
-    marginBottom: 30, // Margem inferior para afastar o texto dos futuros inputs dos alunos
-  }
+    lineHeight: 19,
+    marginBottom: 24,
+  },
 });
