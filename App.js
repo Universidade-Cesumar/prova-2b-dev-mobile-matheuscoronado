@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Alert } from 'react-native';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
@@ -9,6 +9,10 @@ export default function App() {
   const [quantidade, setQuantidade] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    buscarMateriais();
+  }, []);
 
   const buscarMateriais = async () => {
     setCarregando(true);
