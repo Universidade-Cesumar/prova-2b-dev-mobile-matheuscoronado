@@ -4,9 +4,9 @@ import App from '../App';
 
 // Bloco para testar a função lógica obrigatória isoladamente
 describe('🚀 Testes Automatizados - Sprint 2 (Validação Lógica)', () => {
-  
+
   let validarRetirada;
-  
+
   try {
     // Tenta importar a função do aluno de forma dinâmica para não travar o ambiente caso o arquivo não exista
     const validacoes = require('../src/utils/validacoes');
