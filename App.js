@@ -246,7 +246,11 @@ export default function App() {
         <TouchableOpacity style={styles.btnEditar} onPress={() => habilitarEdicao(item)}>
           <Text style={styles.btnEditarTexto}>✏️ Editar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btnExcluir} onPress={() => excluirMaterial(item)}>
+        <TouchableOpacity
+          testID="btn-excluir"
+          style={styles.btnExcluir}
+          onPress={() => excluirMaterial(item)}
+        >
           <Text style={styles.btnExcluirTexto}>🗑️ Excluir</Text>
         </TouchableOpacity>
       </View>
