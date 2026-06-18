@@ -144,17 +144,24 @@ export default function App() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const resposta = await fetch(`${API_URL}/${item.id}`, { method: 'DELETE' });
+              const resposta = await fetch(`${API_URL}/${item.id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+              });
               if (!resposta.ok) throw new Error();
-
-              // [CORREÇÃO] Forçando String() porque a API às vezes manda ID como texto e quebrava o !== estrito
-              setMateriais(lista => lista.filter(m => String(m.id) !== String(item.id)));
-
-              // Se eu deletar um item que estava aberto para edição no momento, limpa o formulário
-              if (itemEditando && String(itemEditando.id) === String(item.id)) {
-                cancelarEdicao();
-              }
-            } catch (error) {
+              setMateriais(lista => lista.filter(m => m.id !== item.id));
+              setRetiradas(prev => {
+                const copia = { ...prev };
+                delete copia[item.id];
+                return copia;
+              });
+              setErrosRetirada(prev => {
+                const copia = { ...prev };
+                delete copia[item.id];
+                return copia;
+              });
+              if (editandoItem?.id === item.id) cancelarEdicao();
+            } catch {
               Alert.alert('Erro', 'Não foi possível excluir o material.');
             }
           },
