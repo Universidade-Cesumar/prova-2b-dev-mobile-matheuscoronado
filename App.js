@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { validarRetirada } from './src/utils/validacoes';
 import {
   StyleSheet,
   Text,
@@ -22,6 +23,11 @@ export default function App() {
   const [quantidade, setQuantidade] = useState('');
   const [carregando, setCarregando] = useState(false); // Rodinha de loading da lista
   const [enviando, setEnviando] = useState(false);     // Rodinha de loading do botão salvar
+
+  // Controle de retirada de estoque por item da lista
+  const [retiradas, setRetiradas] = useState({}); // { [id]: "quantidade digitada" }
+  const [errosRetirada, setErrosRetirada] = useState({}); // { [id]: "mensagem de erro" }
+  const [baixando, setBaixando] = useState({}); // { [id]: true/false }F
 
   // Estados para mostrar as mensagens de erro embaixo dos inputs
   const [erroNome, setErroNome] = useState('');
@@ -84,9 +90,9 @@ export default function App() {
     if (!validarFormulario()) return; // Se a validação falhar, para o código aqui
 
     setEnviando(true);
-    
+
     // Descobre se estamos editando ou criando um novo com base no state 'itemEditando'
-    const isEdicao = !!itemEditando; 
+    const isEdicao = !!itemEditando;
     const url = isEdicao ? `${API_URL}/${itemEditando.id}` : API_URL;
     const metodo = isEdicao ? 'PUT' : 'POST';
 
@@ -94,18 +100,18 @@ export default function App() {
       const resposta = await fetch(url, {
         method: metodo,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          nome: nome.trim(), 
+        body: JSON.stringify({
+          nome: nome.trim(),
           quantidade: Number(quantidade) // API pede número, então dou um parse aqui
         }),
       });
-      
+
       if (!resposta.ok) throw new Error();
       const dadosRetornados = await resposta.json();
 
       if (isEdicao) {
         // Se for edição, faz um .map na lista antiga e substitui só o item que mudou
-        setMateriais(lista => 
+        setMateriais(lista =>
           lista.map(m => String(m.id) === String(dadosRetornados.id) ? dadosRetornados : m)
         );
         setItemEditando(null); // Sai do modo de edição
@@ -140,10 +146,10 @@ export default function App() {
             try {
               const resposta = await fetch(`${API_URL}/${item.id}`, { method: 'DELETE' });
               if (!resposta.ok) throw new Error();
-              
+
               // [CORREÇÃO] Forçando String() porque a API às vezes manda ID como texto e quebrava o !== estrito
               setMateriais(lista => lista.filter(m => String(m.id) !== String(item.id)));
-              
+
               // Se eu deletar um item que estava aberto para edição no momento, limpa o formulário
               if (itemEditando && String(itemEditando.id) === String(item.id)) {
                 cancelarEdicao();
@@ -162,7 +168,7 @@ export default function App() {
     setItemEditando(item); // Guarda o item pra saber que mudamos pra modo PUT
     setNome(item.nome);    // Preenche o input do nome com o valor atual
     setQuantidade(String(item.quantidade)); // Preenche a quantidade convertendo pra string
-    
+
     // Limpa erros antigos pra não confundir
     setErroNome('');
     setErroQuantidade('');
@@ -261,11 +267,11 @@ export default function App() {
                 <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
               </TouchableOpacity>
             )}
-            
+
             <TouchableOpacity
               testID="btn-cadastrar"
               style={[
-                styles.botao, 
+                styles.botao,
                 enviando && styles.botaoDesabilitado,
                 itemEditando && styles.botaoSalvarEdicao // Muda o botão pra verde se for edição
               ]}
