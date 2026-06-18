@@ -38,6 +38,19 @@ O levantamento de requisitos identificou os principais problemas do processo atu
 
 ---
 
+## 📋 Funcionalidades — Sprint 2
+
+- ✅ **Baixa rápida de estoque** — cada item da lista possui um campo de
+  quantidade e um botão de baixa (`PUT`) que subtrai do estoque atual.
+- ✅ **Exclusão de material** — botão de exclusão (`DELETE`) remove o
+  item permanentemente da MockAPI e atualiza a interface local.
+- ✅ **Validação de regra de negócio** — função pura `validarRetirada`
+  em `src/utils/validacoes.js`, testada via Jest, impede:
+  - retiradas maiores que o estoque disponível;
+  - retiradas zeradas ou negativas.
+
+---
+
 ## 🧪 Contrato de Testes (testID)
 
 | Componente | testID |
