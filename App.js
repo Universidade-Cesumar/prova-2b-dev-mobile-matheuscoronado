@@ -18,23 +18,23 @@ import { validarRetirada } from './src/utils/validacoes';
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
 export default function App() {
-  const [materiais, setMateriais]     = useState([]);
-  const [nome, setNome]               = useState('');
-  const [quantidade, setQuantidade]   = useState('');
-  const [carregando, setCarregando]   = useState(false);
-  const [enviando, setEnviando]       = useState(false);
+  const [materiais, setMateriais] = useState([]);
+  const [nome, setNome] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
   // Controla se está no modo edição
   const [editandoItem, setEditandoItem] = useState(null);
 
   // Erros de validação inline do formulário de cadastro/edição
-  const [erroNome, setErroNome]             = useState('');
+  const [erroNome, setErroNome] = useState('');
   const [erroQuantidade, setErroQuantidade] = useState('');
 
   // Controle de retirada de estoque por item da lista (Sprint 2)
-  const [retiradas, setRetiradas]         = useState({}); // { [id]: "quantidade digitada" }
+  const [retiradas, setRetiradas] = useState({}); // { [id]: "quantidade digitada" }
   const [errosRetirada, setErrosRetirada] = useState({}); // { [id]: "mensagem de erro" }
-  const [baixando, setBaixando]           = useState({}); // { [id]: true/false }
+  const [baixando, setBaixando] = useState({}); // { [id]: true/false }
 
   // Referência para rolar até o topo ao clicar em Editar
   const scrollRef = useRef(null);
@@ -125,44 +125,55 @@ export default function App() {
 
   // ─── DELETE ─────────────────────────────────────────────────────────────────
   const excluirMaterial = (item) => {
-    Alert.alert(
-      'Excluir Material',
-      `Deseja excluir "${item.nome}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const resposta = await fetch(`${API_URL}/${item.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-              });
-              if (!resposta.ok) throw new Error();
-              setMateriais(lista => lista.filter(m => m.id !== item.id));
+    const confirmarExclusao = () => {
+      executarExclusao(item);
+    };
 
-              // Limpa estados auxiliares de retirada relacionados ao item excluído
-              setRetiradas(prev => {
-                const copia = { ...prev };
-                delete copia[item.id];
-                return copia;
-              });
-              setErrosRetirada(prev => {
-                const copia = { ...prev };
-                delete copia[item.id];
-                return copia;
-              });
+    if (Platform.OS === 'web') {
+      // No navegador, Alert.alert com múltiplos botões não funciona —
+      // usamos o confirm nativo do navegador.
+      const confirmado = window.confirm(`Deseja excluir "${item.nome}"?`);
+      if (confirmado) confirmarExclusao();
+    } else {
+      Alert.alert(
+        'Excluir Material',
+        `Deseja excluir "${item.nome}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: confirmarExclusao },
+        ]
+      );
+    }
+  };
 
-              // Se estava editando esse item, cancela a edição
-              if (editandoItem?.id === item.id) cancelarEdicao();
-            } catch {
-              Alert.alert('Erro', 'Não foi possível excluir o material.');
-            }
-          },
-        },
-      ]
-    );
+  const executarExclusao = async (item) => {
+    try {
+      const resposta = await fetch(`${API_URL}/${item.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!resposta.ok) throw new Error();
+      setMateriais(lista => lista.filter(m => m.id !== item.id));
+
+      setRetiradas(prev => {
+        const copia = { ...prev };
+        delete copia[item.id];
+        return copia;
+      });
+      setErrosRetirada(prev => {
+        const copia = { ...prev };
+        delete copia[item.id];
+        return copia;
+      });
+
+      if (editandoItem?.id === item.id) cancelarEdicao();
+    } catch {
+      if (Platform.OS === 'web') {
+        window.alert('Não foi possível excluir o material.');
+      } else {
+        Alert.alert('Erro', 'Não foi possível excluir o material.');
+      }
+    }
   };
 
   // ─── Prepara edição no formulário ────────────────────────────────────────────
@@ -367,8 +378,8 @@ export default function App() {
               {enviando
                 ? <ActivityIndicator color="#fff" />
                 : <Text style={styles.botaoTexto}>
-                    {editandoItem ? '💾 Salvar Alterações' : '+ Cadastrar Material'}
-                  </Text>
+                  {editandoItem ? '💾 Salvar Alterações' : '+ Cadastrar Material'}
+                </Text>
               }
             </TouchableOpacity>
           </View>
