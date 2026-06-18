@@ -589,4 +589,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 40,
   },
+  retiradaBox: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  inputRetirada: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#dde3ef',
+    borderRadius: 7,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    color: '#222',
+    backgroundColor: '#fafbfd',
+  },
+  btnBaixar: {
+    backgroundColor: '#e67e22',
+    borderRadius: 7,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnBaixarTexto: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
 });
