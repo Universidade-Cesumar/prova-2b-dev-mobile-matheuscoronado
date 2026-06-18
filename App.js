@@ -254,6 +254,34 @@ export default function App() {
           <Text style={styles.btnExcluirTexto}>🗑️ Excluir</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.retiradaBox}>
+        <TextInput
+          testID="input-retirada"
+          style={[
+            styles.inputRetirada,
+            errosRetirada[item.id] ? styles.inputErro : null,
+          ]}
+          placeholder="Qtd. a retirar"
+          placeholderTextColor="#aaa"
+          keyboardType="numeric"
+          value={retiradas[item.id] || ''}
+          onChangeText={(v) => atualizarRetirada(item.id, v)}
+        />
+        <TouchableOpacity
+          testID="btn-baixar"
+          style={[styles.btnBaixar, baixando[item.id] && styles.botaoDesabilitado]}
+          onPress={() => confirmarBaixa(item)}
+          disabled={baixando[item.id]}
+        >
+          {baixando[item.id]
+            ? <ActivityIndicator color="#fff" size="small" />
+            : <Text style={styles.btnBaixarTexto}>↓ Baixar</Text>
+          }
+        </TouchableOpacity>
+      </View>
+      {errosRetirada[item.id] ? (
+        <Text style={styles.textoErro}>{errosRetirada[item.id]}</Text>
+      ) : null}
     </View>
   );
 
