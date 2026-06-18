@@ -163,6 +163,53 @@ export default function App() {
     );
   };
 
+  // ─── Controle do input de retirada por item ──────────────────────────────────
+  const atualizarRetirada = (id, valor) => {
+    const soNumeros = valor.replace(/[^0-9]/g, '');
+    setRetiradas(prev => ({ ...prev, [id]: soNumeros }));
+    if (errosRetirada[id]) {
+      setErrosRetirada(prev => ({ ...prev, [id]: '' }));
+    }
+  };
+
+  // ─── PUT — Baixa de estoque ───────────────────────────────────────────────────
+  const confirmarBaixa = async (item) => {
+    const quantidadeRetirada = Number(retiradas[item.id]);
+
+    if (!retiradas[item.id]) {
+      setErrosRetirada(prev => ({ ...prev, [item.id]: 'Informe a quantidade a retirar.' }));
+      return;
+    }
+
+    if (!validarRetirada(item.quantidade, quantidadeRetirada)) {
+      setErrosRetirada(prev => ({
+        ...prev,
+        [item.id]: quantidadeRetirada > item.quantidade
+          ? `Estoque insuficiente. Disponível: ${item.quantidade}.`
+          : 'Informe uma quantidade válida (maior que zero).',
+      }));
+      return;
+    }
+
+    setBaixando(prev => ({ ...prev, [item.id]: true }));
+    try {
+      const novaQuantidade = item.quantidade - quantidadeRetirada;
+      const resposta = await fetch(`${API_URL}/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: item.nome, quantidade: novaQuantidade }),
+      });
+      if (!resposta.ok) throw new Error();
+      const atualizado = await resposta.json();
+      setMateriais(lista => lista.map(m => m.id === atualizado.id ? atualizado : m));
+      setRetiradas(prev => ({ ...prev, [item.id]: '' }));
+    } catch {
+      Alert.alert('Erro', 'Não foi possível registrar a baixa de estoque.');
+    } finally {
+      setBaixando(prev => ({ ...prev, [item.id]: false }));
+    }
+  };
+
   // ─── ATIVAR EDIÇÃO (Joga os dados pro formulário lá em cima) ──────────────────
   const habilitarEdicao = (item) => {
     setItemEditando(item); // Guarda o item pra saber que mudamos pra modo PUT
