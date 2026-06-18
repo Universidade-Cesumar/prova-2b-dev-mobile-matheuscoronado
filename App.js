@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { validarRetirada } from './src/utils/validacoes';
 import {
   StyleSheet,
   Text,
@@ -14,64 +13,62 @@ import {
   ScrollView,
 } from 'react-native';
 
+import { validarRetirada } from './src/utils/validacoes';
+
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
 export default function App() {
-  // --- MEUS ESTADOS (STATES) ---
-  const [materiais, setMateriais] = useState([]);
-  const [nome, setNome] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [carregando, setCarregando] = useState(false); // Rodinha de loading da lista
-  const [enviando, setEnviando] = useState(false);     // Rodinha de loading do botão salvar
+  const [materiais, setMateriais]     = useState([]);
+  const [nome, setNome]               = useState('');
+  const [quantidade, setQuantidade]   = useState('');
+  const [carregando, setCarregando]   = useState(false);
+  const [enviando, setEnviando]       = useState(false);
 
-  // Controle de retirada de estoque por item da lista
-  const [retiradas, setRetiradas] = useState({}); // { [id]: "quantidade digitada" }
-  const [errosRetirada, setErrosRetirada] = useState({}); // { [id]: "mensagem de erro" }
-  const [baixando, setBaixando] = useState({}); // { [id]: true/false }F
+  // Controla se está no modo edição
+  const [editandoItem, setEditandoItem] = useState(null);
 
-  // Estados para mostrar as mensagens de erro embaixo dos inputs
-  const [erroNome, setErroNome] = useState('');
+  // Erros de validação inline do formulário de cadastro/edição
+  const [erroNome, setErroNome]             = useState('');
   const [erroQuantidade, setErroQuantidade] = useState('');
 
-  // Guarda o objeto do material que estou editando. Se for null, o app sabe que é um cadastro novo!
-  const [itemEditando, setItemEditando] = useState(null);
+  // Controle de retirada de estoque por item da lista (Sprint 2)
+  const [retiradas, setRetiradas]         = useState({}); // { [id]: "quantidade digitada" }
+  const [errosRetirada, setErrosRetirada] = useState({}); // { [id]: "mensagem de erro" }
+  const [baixando, setBaixando]           = useState({}); // { [id]: true/false }
 
-  // Criando uma referência para o ScrollView para conseguir jogar a tela para cima nas funções
-  const scrollViewRef = useRef(null);
+  // Referência para rolar até o topo ao clicar em Editar
+  const scrollRef = useRef(null);
 
-  // Dispara a busca assim que o app abre na tela
   useEffect(() => {
     buscarMateriais();
   }, []);
 
-  // ─── FUNÇÃO GET (Puxar dados da API) ───────────────────────────────────────
+  // ─── GET ────────────────────────────────────────────────────────────────────
   const buscarMateriais = async () => {
     setCarregando(true);
     try {
       const resposta = await fetch(API_URL);
-      if (!resposta.ok) throw new Error(); // Se der ruim no status do HTTP, joga pro catch
+      if (!resposta.ok) throw new Error();
       const dados = await resposta.json();
-      setMateriais(dados); // Joga os dados da API dentro do array
-    } catch (error) {
+      setMateriais(dados);
+    } catch {
       Alert.alert('Erro', 'Não foi possível carregar o inventário. Verifique a URL da API.');
     } finally {
-      setCarregando(false); // Desliga o loading de qualquer jeito
+      setCarregando(false);
     }
   };
 
-  // ─── VALIDAÇÃO DO FORMULÁRIO ───────────────────────────────────────────────
+  // ─── Validação do formulário de cadastro/edição ──────────────────────────────
   const validarFormulario = () => {
     let valido = true;
 
-    // Validando o campo Nome
     if (!nome.trim()) {
       setErroNome('O nome do material é obrigatório.');
       valido = false;
     } else {
-      setErroNome(''); // Limpa o erro se tiver texto
+      setErroNome('');
     }
 
-    // Validando o campo Quantidade
     if (!quantidade.trim()) {
       setErroQuantidade('A quantidade é obrigatória.');
       valido = false;
@@ -82,57 +79,51 @@ export default function App() {
       setErroQuantidade('');
     }
 
-    return valido; // Retorna true se passou em tudo, ou false se algo deu erro
+    return valido;
   };
 
-  // ─── FUNÇÃO SALVAR (Serve para POST e para PUT) ────────────────────────────
+  // ─── POST ou PUT dependendo do modo ─────────────────────────────────────────
   const salvarMaterial = async () => {
-    if (!validarFormulario()) return; // Se a validação falhar, para o código aqui
+    if (!validarFormulario()) return;
 
     setEnviando(true);
-
-    // Descobre se estamos editando ou criando um novo com base no state 'itemEditando'
-    const isEdicao = !!itemEditando;
-    const url = isEdicao ? `${API_URL}/${itemEditando.id}` : API_URL;
-    const metodo = isEdicao ? 'PUT' : 'POST';
-
     try {
-      const resposta = await fetch(url, {
-        method: metodo,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: nome.trim(),
-          quantidade: Number(quantidade) // API pede número, então dou um parse aqui
-        }),
-      });
-
-      if (!resposta.ok) throw new Error();
-      const dadosRetornados = await resposta.json();
-
-      if (isEdicao) {
-        // Se for edição, faz um .map na lista antiga e substitui só o item que mudou
-        setMateriais(lista =>
-          lista.map(m => String(m.id) === String(dadosRetornados.id) ? dadosRetornados : m)
-        );
-        setItemEditando(null); // Sai do modo de edição
-        Alert.alert('Sucesso', 'Material atualizado com sucesso!');
+      if (editandoItem) {
+        // Modo edição → PUT
+        const resposta = await fetch(`${API_URL}/${editandoItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
+        });
+        if (!resposta.ok) throw new Error();
+        const atualizado = await resposta.json();
+        setMateriais(lista => lista.map(m => m.id === atualizado.id ? atualizado : m));
+        setEditandoItem(null);
       } else {
-        // Se for cadastro novo, joga o item retornado no topo do array antigo (...lista)
-        setMateriais(lista => [dadosRetornados, ...lista]);
-        Alert.alert('Sucesso', 'Material cadastrado com sucesso!');
+        // Modo cadastro → POST
+        const resposta = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
+        });
+        if (!resposta.ok) throw new Error();
+        const novoMaterial = await resposta.json();
+        setMateriais(lista => [novoMaterial, ...lista]);
       }
 
-      // Reseta os inputs do formulário
       setNome('');
       setQuantidade('');
-    } catch (error) {
-      Alert.alert('Erro', `Não foi possível ${isEdicao ? 'atualizar' : 'cadastrar'} o material.`);
+    } catch {
+      Alert.alert('Erro', editandoItem
+        ? 'Não foi possível salvar as alterações.'
+        : 'Não foi possível cadastrar o material.'
+      );
     } finally {
       setEnviando(false);
     }
   };
 
-  // ─── FUNÇÃO DELETE (Apagar da API e da tela) ────────────────────────────────
+  // ─── DELETE ─────────────────────────────────────────────────────────────────
   const excluirMaterial = (item) => {
     Alert.alert(
       'Excluir Material',
@@ -150,6 +141,8 @@ export default function App() {
               });
               if (!resposta.ok) throw new Error();
               setMateriais(lista => lista.filter(m => m.id !== item.id));
+
+              // Limpa estados auxiliares de retirada relacionados ao item excluído
               setRetiradas(prev => {
                 const copia = { ...prev };
                 delete copia[item.id];
@@ -160,6 +153,8 @@ export default function App() {
                 delete copia[item.id];
                 return copia;
               });
+
+              // Se estava editando esse item, cancela a edição
               if (editandoItem?.id === item.id) cancelarEdicao();
             } catch {
               Alert.alert('Erro', 'Não foi possível excluir o material.');
@@ -170,7 +165,25 @@ export default function App() {
     );
   };
 
-  // ─── Controle do input de retirada por item ──────────────────────────────────
+  // ─── Prepara edição no formulário ────────────────────────────────────────────
+  const iniciarEdicao = (item) => {
+    setEditandoItem(item);
+    setNome(item.nome);
+    setQuantidade(String(item.quantidade));
+    setErroNome('');
+    setErroQuantidade('');
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoItem(null);
+    setNome('');
+    setQuantidade('');
+    setErroNome('');
+    setErroQuantidade('');
+  };
+
+  // ─── Controle do input de retirada por item (Sprint 2) ───────────────────────
   const atualizarRetirada = (id, valor) => {
     const soNumeros = valor.replace(/[^0-9]/g, '');
     setRetiradas(prev => ({ ...prev, [id]: soNumeros }));
@@ -179,7 +192,7 @@ export default function App() {
     }
   };
 
-  // ─── PUT — Baixa de estoque ───────────────────────────────────────────────────
+  // ─── PUT — Baixa de estoque (Sprint 2) ────────────────────────────────────────
   const confirmarBaixa = async (item) => {
     const quantidadeRetirada = Number(retiradas[item.id]);
 
@@ -217,89 +230,78 @@ export default function App() {
     }
   };
 
-  // ─── ATIVAR EDIÇÃO (Joga os dados pro formulário lá em cima) ──────────────────
-  const habilitarEdicao = (item) => {
-    setItemEditando(item); // Guarda o item pra saber que mudamos pra modo PUT
-    setNome(item.nome);    // Preenche o input do nome com o valor atual
-    setQuantidade(String(item.quantidade)); // Preenche a quantidade convertendo pra string
-
-    // Limpa erros antigos pra não confundir
-    setErroNome('');
-    setErroQuantidade('');
-
-    // Gambiarra do bem: joga a tela do usuário lá no topo pra ele ver o formulário preenchido
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  };
-
-  // Sai do modo de edição e limpa tudo
-  const cancelarEdicao = () => {
-    setItemEditando(null);
-    setNome('');
-    setQuantidade('');
-    setErroNome('');
-    setErroQuantidade('');
-  };
-
-  // Layout de cada item da lista (Card)
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardNome}>{item.nome}</Text>
-        <View style={styles.cardBadge}>
-          <Text style={styles.cardQuantidade}>{item.quantidade} un.</Text>
+  // ─── Render item ─────────────────────────────────────────────────────────────
+  const renderItem = ({ item }) => {
+    const esteEstaEditando = editandoItem?.id === item.id;
+    return (
+      <View style={[styles.card, esteEstaEditando && styles.cardEditando]}>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardNome}>{item.nome}</Text>
+          <View style={styles.cardBadge}>
+            <Text style={styles.cardQuantidade}>{item.quantidade} un.</Text>
+          </View>
         </View>
-      </View>
-      <View style={styles.cardAcoes}>
-        <TouchableOpacity style={styles.btnEditar} onPress={() => habilitarEdicao(item)}>
-          <Text style={styles.btnEditarTexto}>✏️ Editar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          testID="btn-excluir"
-          style={styles.btnExcluir}
-          onPress={() => excluirMaterial(item)}
-        >
-          <Text style={styles.btnExcluirTexto}>🗑️ Excluir</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.retiradaBox}>
-        <TextInput
-          testID="input-retirada"
-          style={[
-            styles.inputRetirada,
-            errosRetirada[item.id] ? styles.inputErro : null,
-          ]}
-          placeholder="Qtd. a retirar"
-          placeholderTextColor="#aaa"
-          keyboardType="numeric"
-          value={retiradas[item.id] || ''}
-          onChangeText={(v) => atualizarRetirada(item.id, v)}
-        />
-        <TouchableOpacity
-          testID="btn-baixar"
-          style={[styles.btnBaixar, baixando[item.id] && styles.botaoDesabilitado]}
-          onPress={() => confirmarBaixa(item)}
-          disabled={baixando[item.id]}
-        >
-          {baixando[item.id]
-            ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={styles.btnBaixarTexto}>↓ Baixar</Text>
-          }
-        </TouchableOpacity>
-      </View>
-      {errosRetirada[item.id] ? (
-        <Text style={styles.textoErro}>{errosRetirada[item.id]}</Text>
-      ) : null}
-    </View>
-  );
 
-  // ─── RENDERIZAÇÃO DA TELA (JSX) ────────────────────────────────────────────
+        {/* Ações: editar / excluir */}
+        <View style={styles.cardAcoes}>
+          <TouchableOpacity
+            style={[styles.btnEditar, esteEstaEditando && styles.btnEditarAtivo]}
+            onPress={() => esteEstaEditando ? cancelarEdicao() : iniciarEdicao(item)}
+          >
+            <Text style={[styles.btnEditarTexto, esteEstaEditando && styles.btnEditarAtivoTexto]}>
+              {esteEstaEditando ? '✕ Cancelar' : '✏️ Editar'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="btn-excluir"
+            style={styles.btnExcluir}
+            onPress={() => excluirMaterial(item)}
+          >
+            <Text style={styles.btnExcluirTexto}>🗑️ Excluir</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Baixa rápida de estoque */}
+        <View style={styles.retiradaBox}>
+          <TextInput
+            testID="input-retirada"
+            style={[
+              styles.inputRetirada,
+              errosRetirada[item.id] ? styles.inputErro : null,
+            ]}
+            placeholder="Qtd. a retirar"
+            placeholderTextColor="#aaa"
+            keyboardType="numeric"
+            value={retiradas[item.id] || ''}
+            onChangeText={(v) => atualizarRetirada(item.id, v)}
+          />
+          <TouchableOpacity
+            testID="btn-baixar"
+            style={[styles.btnBaixar, baixando[item.id] && styles.botaoDesabilitado]}
+            onPress={() => confirmarBaixa(item)}
+            disabled={baixando[item.id]}
+          >
+            {baixando[item.id]
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={styles.btnBaixarTexto}>↓ Baixar</Text>
+            }
+          </TouchableOpacity>
+        </View>
+        {errosRetirada[item.id] ? (
+          <Text style={styles.textoErro}>{errosRetirada[item.id]}</Text>
+        ) : null}
+      </View>
+    );
+  };
+
+  // ─── UI ──────────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        ref={scrollViewRef} // Conecta a referência aqui para o scroll funcionar
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -307,15 +309,19 @@ export default function App() {
         {/* Cabeçalho */}
         <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
         <Text style={styles.description}>
-          Controle de insumos em tempo real. Cadastre ou edite materiais e
+          Controle de insumos em tempo real. Cadastre novos materiais e
           acompanhe o inventário conectado à API.
         </Text>
 
-        {/* Formulário que muda de cor se estiver em modo edição (Dica estética do YouTube) */}
-        <View style={[styles.form, itemEditando && styles.formEmEdicao]}>
-          <Text style={styles.label}>
-            {itemEditando ? 'Editando Material' : 'Nome do Material'}
-          </Text>
+        {/* Formulário — muda título e botão dependendo do modo */}
+        <View style={[styles.form, editandoItem && styles.formEditando]}>
+          {editandoItem && (
+            <View style={styles.badgeEdicao}>
+              <Text style={styles.badgeEdicaoTexto}>✏️ Editando: {editandoItem.nome}</Text>
+            </View>
+          )}
+
+          <Text style={styles.label}>Nome do Material</Text>
           <TextInput
             testID="input-nome"
             style={[styles.input, erroNome ? styles.inputErro : null]}
@@ -335,7 +341,6 @@ export default function App() {
             keyboardType="numeric"
             value={quantidade}
             onChangeText={v => {
-              // Regex maroto pra aceitar apenas números inteiros positivos
               const soNumeros = v.replace(/[^0-9]/g, '');
               setQuantidade(soNumeros);
               if (soNumeros) setErroQuantidade('');
@@ -343,39 +348,33 @@ export default function App() {
           />
           {erroQuantidade ? <Text style={styles.textoErro}>{erroQuantidade}</Text> : null}
 
-          {/* Se estiver editando, cria duas colunas para os botões "Cancelar" e "Salvar" */}
-          <View style={itemEditando ? styles.containerBotoesEdicao : null}>
-            {itemEditando && (
-              <TouchableOpacity
-                style={styles.botaoCancelar}
-                onPress={cancelarEdicao}
-              >
-                <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+          <View style={styles.botoes}>
+            {editandoItem && (
+              <TouchableOpacity style={styles.btnCancelar} onPress={cancelarEdicao}>
+                <Text style={styles.btnCancelarTexto}>Cancelar</Text>
               </TouchableOpacity>
             )}
-
             <TouchableOpacity
               testID="btn-cadastrar"
               style={[
                 styles.botao,
+                editandoItem && styles.botaoSalvar,
                 enviando && styles.botaoDesabilitado,
-                itemEditando && styles.botaoSalvarEdicao // Muda o botão pra verde se for edição
               ]}
               onPress={salvarMaterial}
               disabled={enviando}
             >
-              {enviando ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.botaoTexto}>
-                  {itemEditando ? '💾 Salvar Alterações' : '+ Cadastrar Material'}
-                </Text>
-              )}
+              {enviando
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.botaoTexto}>
+                    {editandoItem ? '💾 Salvar Alterações' : '+ Cadastrar Material'}
+                  </Text>
+              }
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Listagem */}
+        {/* Cabeçalho da lista */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Inventário Atual</Text>
           <TouchableOpacity onPress={buscarMateriais}>
@@ -383,6 +382,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
+        {/* Lista */}
         {carregando ? (
           <ActivityIndicator size="large" color="#2a7ae4" style={{ marginTop: 30 }} />
         ) : (
@@ -391,7 +391,7 @@ export default function App() {
             data={materiais}
             keyExtractor={item => String(item.id)}
             renderItem={renderItem}
-            scrollEnabled={false} // Desativado porque o ScrollView de fora já cuida da rolagem toda
+            scrollEnabled={false}
             ListEmptyComponent={
               <Text style={styles.listaVazia}>Nenhum material cadastrado.</Text>
             }
@@ -402,7 +402,6 @@ export default function App() {
   );
 }
 
-// --- ESTILIZAÇÃO DO APP ---
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
@@ -440,12 +439,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
-  formEmEdicao: {
-    borderColor: '#2a7ae4', // Borda azul para indicar que está editando
-    backgroundColor: '#f9fbfd',
+  formEditando: {
+    borderWidth: 2,
+    borderColor: '#2a7ae4',
+  },
+  badgeEdicao: {
+    backgroundColor: '#e8f0fe',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 14,
+  },
+  badgeEdicaoTexto: {
+    color: '#2a7ae4',
+    fontSize: 13,
+    fontWeight: '600',
   },
   label: {
     fontSize: 13,
@@ -472,22 +481,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
-  containerBotoesEdicao: {
+  botoes: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginTop: 18,
   },
   botao: {
+    flex: 1,
     backgroundColor: '#2a7ae4',
     borderRadius: 8,
     paddingVertical: 13,
     alignItems: 'center',
-    marginTop: 18,
-    flex: 1,
   },
-  botaoSalvarEdicao: {
-    marginTop: 0, // Alinha certinho com o botão cancelar lado a lado
-    backgroundColor: '#27ae60', // Verde de sucesso pra salvar
+  botaoSalvar: {
+    backgroundColor: '#27ae60',
   },
   botaoDesabilitado: {
     backgroundColor: '#9ab8e6',
@@ -497,16 +504,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
-  botaoCancelar: {
-    flex: 1,
-    backgroundColor: '#e0e0e0',
+  btnCancelar: {
+    flex: 0.45,
+    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     paddingVertical: 13,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  botaoCancelarTexto: {
-    color: '#444',
+  btnCancelarTexto: {
+    color: '#666',
     fontWeight: '600',
     fontSize: 15,
   },
@@ -535,6 +541,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
+  },
+  cardEditando: {
+    borderWidth: 2,
+    borderColor: '#2a7ae4',
   },
   cardInfo: {
     flexDirection: 'row',
@@ -571,10 +581,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#c5d5f5',
   },
+  btnEditarAtivo: {
+    backgroundColor: '#fff0f0',
+    borderColor: '#f5c5c5',
+  },
   btnEditarTexto: {
     color: '#2a7ae4',
     fontSize: 13,
     fontWeight: '600',
+  },
+  btnEditarAtivoTexto: {
+    color: '#e74c3c',
   },
   btnExcluir: {
     flex: 1,
@@ -589,12 +606,6 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     fontSize: 13,
     fontWeight: '600',
-  },
-  listaVazia: {
-    textAlign: 'center',
-    color: '#aaa',
-    fontSize: 14,
-    marginTop: 40,
   },
   retiradaBox: {
     flexDirection: 'row',
@@ -624,5 +635,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 13,
+  },
+  listaVazia: {
+    textAlign: 'center',
+    color: '#aaa',
+    fontSize: 14,
+    marginTop: 40,
   },
 });
