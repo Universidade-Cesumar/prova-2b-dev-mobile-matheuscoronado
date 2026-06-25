@@ -9,9 +9,9 @@ Sistema mobile de controle de insumos médicos desenvolvido para modernizar o al
 O levantamento de requisitos identificou os principais problemas do processo atual:
 
 - Controle feito em Excel com rascunho prévio em papel
-- Sem contabilização automática de entrada/saída
-- Sem alertas de validade ou estoque zerado
-- Acesso limitado ao computador (sem mobilidade no estoque)
+- Sem contabilização automática de entrada/saída de materiais
+- Sem alertas visuais de validade ou estoque zerado
+- Acesso limitado ao computador, sem mobilidade dentro do ambiente de estoque
 
 ---
 
@@ -27,28 +27,29 @@ O levantamento de requisitos identificou os principais problemas do processo atu
 
 ---
 
-## 📋 Funcionalidades — Sprint 1
+## 📋 Funcionalidades por Sprint
 
+### Sprint 1 — Fundação, API e Inventário Mobile
 - ✅ **GET /materiais** — Carrega o inventário ao abrir o app via `useEffect`
 - ✅ **POST /materiais** — Cadastra novo insumo com nome e quantidade
 - ✅ Lista de rolagem com `FlatList` atualizada dinamicamente
-- ✅ Validação de campos antes do envio (mensagens de erro inline)
+- ✅ Validação de campos antes do envio com mensagens de erro inline
 - ✅ Campo de quantidade aceita apenas números
-- ✅ Feedback visual de carregamento (`ActivityIndicator`)
+- ✅ Feedback visual de carregamento com `ActivityIndicator`
 - ✅ Botão de atualização manual do inventário
 
-## 📋 Funcionalidades — Sprint 2
+### Sprint 2 — Regras de Negócio e Saídas
+- ✅ **Baixa rápida de estoque** — campo de retirada por item com `PUT` que subtrai do estoque atual
+- ✅ **Exclusão de material** — `DELETE` remove permanentemente da MockAPI e atualiza a interface
+- ✅ **Edição de material** — carrega dados no formulário principal para edição via `PUT`
+- ✅ **Validação de regra de negócio** — função pura `validarRetirada` em `src/utils/validacoes.js` impede retiradas maiores que o estoque ou com valor zero/negativo
 
-- ✅ **Baixa rápida de estoque** — cada item da lista possui um campo de
-  quantidade e um botão de baixa (`PUT`) que subtrai do estoque atual.
-- ✅ **Exclusão de material** — botão de exclusão (`DELETE`) remove o
-  item permanentemente da MockAPI e atualiza a interface local.
-- ✅ **Edição de material** — botão de editar carrega os dados do item
-  no formulário principal, permitindo atualizar nome e quantidade (`PUT`).
-- ✅ **Validação de regra de negócio** — função pura `validarRetirada`
-  em `src/utils/validacoes.js`, testada via Jest, impede:
-  - retiradas maiores que o estoque disponível;
-  - retiradas zeradas ou negativas.
+### Sprint 3 — Dashboard Mobile e Publicação
+- ✅ **Filtro em tempo real** — campo de busca filtra materiais pelo nome à medida que o usuário digita, usando `useMemo` para performance
+- ✅ **Totalizador** — exibe a contagem de itens encontrados, atualizada conforme o filtro aplicado
+- ✅ **Indicador de estoque crítico** — itens com quantidade abaixo de 10 recebem fundo vermelho, borda de alerta e badge `⚠️ Estoque crítico`
+- ✅ **Resiliência de rede** — todos os blocos de requisição possuem `try/catch` com mensagens amigáveis, prevenindo travamentos do app
+- ✅ **FlatList sempre renderizada** — o indicador de carregamento é exibido separadamente, mantendo a lista acessível para os testes automatizados
 
 ---
 
@@ -58,7 +59,7 @@ O levantamento de requisitos identificou os principais problemas do processo atu
 
 - Node.js 18+
 - npm ou yarn
-- Expo Go instalado no celular **ou** emulador Android/iOS
+- Expo Go instalado no celular (Android ou iOS)
 
 ### 1. Configure a MockAPI
 
@@ -67,6 +68,7 @@ O levantamento de requisitos identificou os principais problemas do processo atu
 3. Adicione o recurso **`materiais`** com os campos:
    - `nome` → String
    - `quantidade` → Number
+4. Copie a URL gerada (ex: `https://abc123.mockapi.io/api/v1/materiais`)
 
 ### 2. Configure a URL no App
 
@@ -88,9 +90,9 @@ npm install
 npx expo start
 ```
 
-Escaneie o QR Code com o **Expo Go** (Android/iOS) ou pressione `a` para abrir no emulador Android.
+Escaneie o QR Code com o **Expo Go** ou pressione `a` para abrir no emulador Android.
 
-### 5. Execute os testes
+### 5. Execute os testes automatizados
 
 ```bash
 npm test
@@ -102,18 +104,25 @@ npm test
 
 ```
 /
-├── App.js                       # Componente principal
+├── App.js                       # Componente principal (Sprint 1, 2 e 3)
 ├── index.js                     # Entry point Expo
 ├── package.json
 ├── jest.config.js
 ├── README.md
+├── screenshots/                 # Capturas de tela do app
+│   ├── Tela Principal.png
+│   ├── Tela com Materiais.png
+│   ├── Alerta.png
+│   ├── Filtro.png
+│   ├── mockapi.png
+│   └── Video.mp4
 ├── src/
 │   └── utils/
 │       └── validacoes.js        # Função pura validarRetirada (Sprint 2)
 └── __tests__/
-    ├── sprint1.test.js          # Testes automatizados Sprint 1
-    ├── sprint2.test.js          # Testes automatizados Sprint 2
-    └── sprint3.test.js          # Testes automatizados Sprint 3
+    ├── sprint1.test.js
+    ├── sprint2.test.js
+    └── sprint3.test.js
 ```
 
 ---
@@ -131,12 +140,42 @@ npm test
 
 ### Sprint 2
 
-| Componente | testID |
+| Componente | testID / contrato |
 |---|---|
 | TextInput — Quantidade a retirar | `input-retirada` |
 | TouchableOpacity — Confirmar baixa (PUT) | `btn-baixar` |
 | TouchableOpacity — Excluir item (DELETE) | `btn-excluir` |
-| Função pura | `validarRetirada(estoqueAtual, quantidadeRetirada)` em `src/utils/validacoes.js` |
+| Função pura de validação | `validarRetirada(estoqueAtual, quantidadeRetirada)` em `src/utils/validacoes.js` |
+
+### Sprint 3
+
+| Componente | testID / contrato |
+|---|---|
+| TextInput — Campo de busca | `input-busca` |
+| Text — Totalizador de itens | `total-itens` |
+| Card com estoque crítico (qtd < 10) | `accessibilityLabel="estoque-critico"` |
+
+---
+
+## 📸 Screenshots
+
+### Tela principal
+![Tela principal](./screenshots/Tela%20Principal.png)
+
+### Tela principal com materiais cadastrados
+![Cadastro Materiais](./screenshots/Tela%20com%20Materiais.png)
+
+### Estoque crítico — Alerta visual
+![Estoque crítico](./screenshots/Alerta.png)
+
+### Filtro de busca em tempo real
+![Filtro](./screenshots/Filtro.png)
+
+### MockAPI — Configuração do recurso
+![Mockapi](./screenshots/mockapi.png)
+
+### Demonstração em vídeo
+[▶️ Assistir demonstração](./screenshots/Video.mp4)
 
 ---
 
@@ -144,4 +183,3 @@ npm test
 
 **Matheus Coronado**
 Disciplina: Desenvolvimento Mobile
-Sprint 2 — Regras de Negócio e Saídas no Mobile
