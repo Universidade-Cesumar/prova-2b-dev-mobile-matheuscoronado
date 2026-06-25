@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,12 +17,18 @@ import { validarRetirada } from './src/utils/validacoes';
 
 const API_URL = 'https://6a2b389db687a7d5cbc4f7a9.mockapi.io/api/v1/materiais';
 
+// Limiar de estoque crítico
+const ESTOQUE_CRITICO = 10;
+
 export default function App() {
   const [materiais, setMateriais] = useState([]);
   const [nome, setNome] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+
+  // Sprint 3 — filtro de busca
+  const [busca, setBusca] = useState('');
 
   // Controla se está no modo edição
   const [editandoItem, setEditandoItem] = useState(null);
@@ -32,9 +38,9 @@ export default function App() {
   const [erroQuantidade, setErroQuantidade] = useState('');
 
   // Controle de retirada de estoque por item da lista (Sprint 2)
-  const [retiradas, setRetiradas] = useState({}); // { [id]: "quantidade digitada" }
-  const [errosRetirada, setErrosRetirada] = useState({}); // { [id]: "mensagem de erro" }
-  const [baixando, setBaixando] = useState({}); // { [id]: true/false }
+  const [retiradas, setRetiradas] = useState({});
+  const [errosRetirada, setErrosRetirada] = useState({});
+  const [baixando, setBaixando] = useState({});
 
   // Referência para rolar até o topo ao clicar em Editar
   const scrollRef = useRef(null);
@@ -43,16 +49,28 @@ export default function App() {
     buscarMateriais();
   }, []);
 
+  // ─── Sprint 3: lista filtrada em tempo real ──────────────────────────────────
+  const materiaisFiltrados = useMemo(() => {
+    if (!busca.trim()) return materiais;
+    return materiais.filter(m =>
+      m.nome.toLowerCase().includes(busca.toLowerCase().trim())
+    );
+  }, [materiais, busca]);
+
   // ─── GET ────────────────────────────────────────────────────────────────────
   const buscarMateriais = async () => {
     setCarregando(true);
     try {
       const resposta = await fetch(API_URL);
-      if (!resposta.ok) throw new Error();
+      if (!resposta.ok) throw new Error('Resposta inválida do servidor.');
       const dados = await resposta.json();
       setMateriais(dados);
-    } catch {
-      Alert.alert('Erro', 'Não foi possível carregar o inventário. Verifique a URL da API.');
+    } catch (erro) {
+      Alert.alert(
+        'Falha na conexão',
+        'Não foi possível carregar o inventário. Verifique sua conexão e a URL da API.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setCarregando(false);
     }
@@ -89,34 +107,35 @@ export default function App() {
     setEnviando(true);
     try {
       if (editandoItem) {
-        // Modo edição → PUT
         const resposta = await fetch(`${API_URL}/${editandoItem.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
+          body: JSON.stringify({ nome: nome.trim(), quantity: Number(quantidade) }),
         });
-        if (!resposta.ok) throw new Error();
+        if (!resposta.ok) throw new Error('Erro ao atualizar material.');
         const atualizado = await resposta.json();
         setMateriais(lista => lista.map(m => m.id === atualizado.id ? atualizado : m));
         setEditandoItem(null);
       } else {
-        // Modo cadastro → POST
         const resposta = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nome: nome.trim(), quantidade: Number(quantidade) }),
         });
-        if (!resposta.ok) throw new Error();
+        if (!resposta.ok) throw new Error('Erro ao cadastrar material.');
         const novoMaterial = await resposta.json();
         setMateriais(lista => [novoMaterial, ...lista]);
       }
 
       setNome('');
       setQuantidade('');
-    } catch {
-      Alert.alert('Erro', editandoItem
-        ? 'Não foi possível salvar as alterações.'
-        : 'Não foi possível cadastrar o material.'
+    } catch (erro) {
+      Alert.alert(
+        'Falha na operação',
+        editandoItem
+          ? 'Não foi possível salvar as alterações. Tente novamente.'
+          : 'Não foi possível cadastrar o material. Verifique sua conexão.',
+        [{ text: 'OK' }]
       );
     } finally {
       setEnviando(false);
@@ -125,13 +144,9 @@ export default function App() {
 
   // ─── DELETE ─────────────────────────────────────────────────────────────────
   const excluirMaterial = (item) => {
-    const confirmarExclusao = () => {
-      executarExclusao(item);
-    };
+    const confirmarExclusao = () => executarExclusao(item);
 
     if (Platform.OS === 'web') {
-      // No navegador, Alert.alert com múltiplos botões não funciona —
-      // usamos o confirm nativo do navegador.
       const confirmado = window.confirm(`Deseja excluir "${item.nome}"?`);
       if (confirmado) confirmarExclusao();
     } else {
@@ -152,7 +167,7 @@ export default function App() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!resposta.ok) throw new Error();
+      if (!resposta.ok) throw new Error('Erro ao excluir material.');
       setMateriais(lista => lista.filter(m => m.id !== item.id));
 
       setRetiradas(prev => {
@@ -167,16 +182,20 @@ export default function App() {
       });
 
       if (editandoItem?.id === item.id) cancelarEdicao();
-    } catch {
+    } catch (erro) {
       if (Platform.OS === 'web') {
-        window.alert('Não foi possível excluir o material.');
+        window.alert('Não foi possível excluir o material. Tente novamente.');
       } else {
-        Alert.alert('Erro', 'Não foi possível excluir o material.');
+        Alert.alert(
+          'Falha na exclusão',
+          'Não foi possível excluir o material. Verifique sua conexão.',
+          [{ text: 'OK' }]
+        );
       }
     }
   };
 
-  // ─── Prepara edição no formulário ────────────────────────────────────────────
+  // ─── Edição inline ───────────────────────────────────────────────────────────
   const iniciarEdicao = (item) => {
     setEditandoItem(item);
     setNome(item.nome);
@@ -230,12 +249,16 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: item.nome, quantidade: novaQuantidade }),
       });
-      if (!resposta.ok) throw new Error();
+      if (!resposta.ok) throw new Error('Erro ao registrar baixa.');
       const atualizado = await resposta.json();
       setMateriais(lista => lista.map(m => m.id === atualizado.id ? atualizado : m));
       setRetiradas(prev => ({ ...prev, [item.id]: '' }));
-    } catch {
-      Alert.alert('Erro', 'Não foi possível registrar a baixa de estoque.');
+    } catch (erro) {
+      Alert.alert(
+        'Falha na baixa',
+        'Não foi possível registrar a saída de estoque. Tente novamente.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setBaixando(prev => ({ ...prev, [item.id]: false }));
     }
@@ -244,12 +267,28 @@ export default function App() {
   // ─── Render item ─────────────────────────────────────────────────────────────
   const renderItem = ({ item }) => {
     const esteEstaEditando = editandoItem?.id === item.id;
+    const estoqueCritico = item.quantidade < ESTOQUE_CRITICO;
+
     return (
-      <View style={[styles.card, esteEstaEditando && styles.cardEditando]}>
+      <View
+        style={[
+          styles.card,
+          esteEstaEditando && styles.cardEditando,
+          estoqueCritico && styles.cardCritico,
+        ]}
+        accessibilityLabel={estoqueCritico ? 'estoque-critico' : undefined}
+      >
         <View style={styles.cardInfo}>
-          <Text style={styles.cardNome}>{item.nome}</Text>
-          <View style={styles.cardBadge}>
-            <Text style={styles.cardQuantidade}>{item.quantidade} un.</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardNome}>{item.nome}</Text>
+            {estoqueCritico && (
+              <Text style={styles.alertaCritico}>⚠️ Estoque crítico</Text>
+            )}
+          </View>
+          <View style={[styles.cardBadge, estoqueCritico && styles.cardBadgeCritico]}>
+            <Text style={[styles.cardQuantidade, estoqueCritico && styles.cardQuantidadeCritica]}>
+              {item.quantidade} un.
+            </Text>
           </View>
         </View>
 
@@ -321,10 +360,10 @@ export default function App() {
         <Text style={styles.title}>Almoxarifado — Enfermagem</Text>
         <Text style={styles.description}>
           Controle de insumos em tempo real. Cadastre novos materiais e
-          acompanhe o inventário conectado à API.
+          acomhe o inventário conectado à API.
         </Text>
 
-        {/* Formulário — muda título e botão dependendo do modo */}
+        {/* Formulário */}
         <View style={[styles.form, editandoItem && styles.formEditando]}>
           {editandoItem && (
             <View style={styles.badgeEdicao}>
@@ -385,6 +424,22 @@ export default function App() {
           </View>
         </View>
 
+        {/* Dashboard / Filtro */}
+        <View style={styles.dashboard}>
+          <TextInput
+            testID="input-busca"
+            style={styles.inputBusca}
+            placeholder="🔍 Buscar material..."
+            placeholderTextColor="#aaa"
+            value={busca}
+            onChangeText={setBusca}
+          />
+          <Text testID="total-itens" style={styles.totalItens}>
+            {materiaisFiltrados.length}{' '}
+            {materiaisFiltrados.length === 1 ? 'item encontrado' : 'itens encontrados'}
+          </Text>
+        </View>
+
         {/* Cabeçalho da lista */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Inventário Atual</Text>
@@ -393,14 +448,15 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Lista */}
+        {/* Indicador de carregamento solto — não oculta mais a FlatList */}
         {carregando && (
-          <ActivityIndicator size="large" color="#2a7ae4" style={{ marginTop: 30 }} />
+          <ActivityIndicator size="large" color="#2a7ae4" style={{ marginVertical: 20 }} />
         )}
 
+        {/* Lista sempre visível para o Jest */}
         <FlatList
           testID="lista-materials"
-          data={carregando ? [] : materiais} 
+          data={carregando ? [] : materiaisFiltrados}
           keyExtractor={item => String(item.id)}
           renderItem={renderItem}
           scrollEnabled={false}
@@ -426,6 +482,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+
+  // Cabeçalho
   title: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -440,6 +498,8 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginBottom: 24,
   },
+
+  // Formulário
   form: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -527,6 +587,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+
+  // Dashboard / Filtro — Sprint 3
+  dashboard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputBusca: {
+    borderWidth: 1,
+    borderColor: '#dde3ef',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: '#222',
+    backgroundColor: '#fafbfd',
+    marginBottom: 10,
+  },
+  totalItens: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'right',
+  },
+
+  // Seção da lista
   secaoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -542,6 +633,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#2a7ae4',
   },
+
+  // Cards
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -557,6 +650,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#2a7ae4',
   },
+  cardCritico: {
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+  },
   cardInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -568,16 +666,28 @@ const styles = StyleSheet.create({
     color: '#222',
     flex: 1,
   },
+  alertaCritico: {
+    fontSize: 11,
+    color: '#e74c3c',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   cardBadge: {
     backgroundColor: '#e8f0fe',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
+  cardBadgeCritico: {
+    backgroundColor: '#fde8e8',
+  },
   cardQuantidade: {
     fontSize: 13,
     fontWeight: 'bold',
     color: '#2a7ae4',
+  },
+  cardQuantidadeCritica: {
+    color: '#e74c3c',
   },
   cardAcoes: {
     flexDirection: 'row',
@@ -618,6 +728,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+
+  // Retirada de estoque (Sprint 2)
   retiradaBox: {
     flexDirection: 'row',
     gap: 8,
@@ -647,6 +759,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
+
+  // Lista vazia
   listaVazia: {
     textAlign: 'center',
     color: '#aaa',
