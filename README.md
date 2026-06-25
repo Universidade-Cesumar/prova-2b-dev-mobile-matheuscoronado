@@ -175,7 +175,7 @@ npm test
 ![Mockapi](./screenshots/mockapi.png)
 
 ### Demonstração em vídeo
-[▶️ Assistir demonstração](./screenshots/Video.mp4)
+[▶️ Assistir demonstração](https://github.com/Universidade-Cesumar/prova-2b-dev-mobile-matheuscoronado/releases/tag/Video/Video.mp4)
 
 ---
 
